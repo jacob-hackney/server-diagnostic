@@ -1,0 +1,14 @@
+{
+  "name": "server-diagnostic",
+  "version": "0.0.0",
+  "main": "index.js",
+  "keywords": [
+    "server",
+    "node",
+    "backend",
+    "diagnostics",
+    "auto-restart"
+  ],
+  "author": "Jacob Hackney",
+  "license": "MIT"
+}
