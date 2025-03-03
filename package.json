@@ -1,7 +1,8 @@
 {
   "name": "server-diagnostic",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "keywords": [
     "server",
     "node",
@@ -10,5 +11,8 @@
     "auto-restart"
   ],
   "author": "Jacob Hackney",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "ansi-escape-sequences": "^6.2.4"
+  }
 }
