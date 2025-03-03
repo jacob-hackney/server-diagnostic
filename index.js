@@ -12,7 +12,6 @@ class ServerHub {
         "Cannot set restart interval without enabling restarter."
       );
     }
-    this.servers = [];
     this.#initialize();
   }
   async addServer(filePath, url) {
@@ -22,7 +21,7 @@ class ServerHub {
     } else {
       const server = [filePath, url];
       let exists = false;
-      for (let server of this.servers) {
+      for (let server of this.#servers) {
         if (server[0] === filePath) {
           exists = true;
           break;
@@ -33,7 +32,7 @@ class ServerHub {
         }
       }
       if (!exists) {
-        this.servers.push(server);
+        this.#servers.push(server);
       } else {
         throw new Error(
           "Server with the same file path or URL already exists on this hub."
@@ -44,19 +43,22 @@ class ServerHub {
   }
   async removeServer(filePath) {
     await fs.access(filePath);
-    this.servers = this.servers.filter((server) => server[0] !== filePath);
+    this.#servers = this.servers.filter((server) => server[0] !== filePath);
     return this;
   }
   async logDiagnostics() {
     console.log(ansi.format("[SERVER DIAGNOSTIC LOG]", ["bold", "cyan"]));
-    for (let server of this.servers) {
+    for (let server of this.#servers) {
       await this.#logSingleServerDiagnostic(server);
       console.log(ansi.format("-".repeat(50), ["bold", "cyan"]));
     }
     return this;
   }
+  getServers() {
+    return this.#servers;
+  }
   #initialize() {
-    for (let server of this.servers) {
+    for (let server of this.#servers) {
       child_process.exec(`node ${server[0]}`);
     }
     if (this.useRestarter) {
@@ -64,7 +66,7 @@ class ServerHub {
     }
   }
   async #checkServerCrash() {
-    for (let server of this.servers) {
+    for (let server of this.#servers) {
       fetch(`${server[1]}/testpath`).catch(() => {
         console.warn(`Server at ${server[1]} has crashed. Restarting...`);
         child_process
@@ -101,6 +103,7 @@ class ServerHub {
       console.log(ansi.format("N/A", ["magenta", "bold"]));
     }
   }
+  #servers = [];
 }
 
 export default ServerHub;
