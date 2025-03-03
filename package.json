@@ -1,6 +1,10 @@
 {
   "name": "server-diagnostic",
+<<<<<<< HEAD
   "version": "1.0.0",
+=======
+  "version": "1.0.1",
+>>>>>>> development
   "main": "index.js",
   "type": "module",
   "keywords": [

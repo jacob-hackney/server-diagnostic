@@ -1,5 +1,7 @@
 # server-diagnostic
 
+[https://www.npmjs.com/package/server-diagnostic](https://www.npmjs.com/package/server-diagnostic)
+
 ## Installation
 
 ```sh
