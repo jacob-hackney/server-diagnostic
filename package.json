@@ -11,5 +11,8 @@
     "auto-restart"
   ],
   "author": "Jacob Hackney",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "ansi-escape-sequences": "^6.2.4"
+  }
 }
