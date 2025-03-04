@@ -15,10 +15,10 @@ class ServerHub {
     this.#initialize();
   }
   async addServer(filePath, url) {
-    await fs.access(filePath);
     if (path.extname(filePath) !== ".js") {
-      throw new Error("Invalid file type. Only .js files are allowed.");
+      filePath += ".js";
     } else {
+      await fs.access(filePath);
       const server = [filePath, url];
       let exists = false;
       for (let server of this.#servers) {
