@@ -21,7 +21,7 @@ class ServerHub {
       await fs.access(filePath);
       const server = [filePath, url];
       let exists = false;
-      for (let server of this.#servers) {
+      for (let server of this.servers) {
         if (server[0] === filePath) {
           exists = true;
           break;
@@ -32,7 +32,7 @@ class ServerHub {
         }
       }
       if (!exists) {
-        this.#servers.push(server);
+        this.servers.push(server);
       } else {
         throw new Error(
           "Server with the same file path or URL already exists on this hub."
@@ -43,38 +43,46 @@ class ServerHub {
   }
   async removeServer(filePath) {
     await fs.access(filePath);
-    this.#servers = this.servers.filter((server) => server[0] !== filePath);
+    this.servers = this.servers.filter((server) => server[0] !== filePath);
     return this;
   }
   async logDiagnostics() {
     console.log(ansi.format("[SERVER DIAGNOSTIC LOG]", ["bold", "cyan"]));
-    for (let server of this.#servers) {
+    for (let server of this.servers) {
       await this.#logSingleServerDiagnostic(server);
       console.log(ansi.format("-".repeat(50), ["bold", "cyan"]));
     }
     return this;
   }
   getServers() {
-    return this.#servers;
+    return this.servers;
   }
   #initialize() {
-    for (let server of this.#servers) {
+    for (let server of this.servers) {
       child_process.exec(`node ${server[0]}`);
     }
     if (this.useRestarter) {
-      setInterval(this.#checkServerCrash(), this.restartInterval);
+      setInterval(this.#checkServerCrash, this.restartInterval);
     }
   }
-  async #checkServerCrash() {
-    for (let server of this.#servers) {
-      fetch(`${server[1]}/testpath`).catch(() => {
-        console.warn(`Server at ${server[1]} has crashed. Restarting...`);
-        child_process
-          .exec(`node ${server[0]}`)
-          .then(() =>
-            console.log(`Server at ${server[1]} has been restarted.`)
-          );
-      });
+  #checkServerCrash() {
+    if (this.servers) {
+      for (let server of this.servers) {
+        fetch(`${server[1]}/testpath`).catch(() => {
+          console.warn(`Server at ${server[1]} has crashed. Restarting...`);
+          child_process
+            .exec(`node ${server[0]}`)
+            .then(() =>
+              console.log(`Server at ${server[1]} has been restarted.`)
+            );
+        });
+      }
+    } else {
+      console.warn(
+        ansi.format("ServerHub error: ", ["yellow", "bold"]) +
+          ansi.format("automatic restarter: ", ["yellow", "italic"]) +
+          ansi.format("no servers on hub", ["yellow"])
+      );
     }
   }
   async #logSingleServerDiagnostic(server) {
@@ -103,7 +111,7 @@ class ServerHub {
       console.log(ansi.format("N/A", ["magenta", "bold"]));
     }
   }
-  #servers = [];
+  servers = [];
 }
 
 export default ServerHub;
