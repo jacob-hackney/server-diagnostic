@@ -12,98 +12,103 @@ class ServerHub {
         "Cannot set restart interval without enabling restarter."
       );
     }
+    this.servers = [];
     this.#initialize();
   }
+
   async addServer(filePath, url) {
-    await fs.access(filePath);
     if (path.extname(filePath) !== ".js") {
-      throw new Error("Invalid file type. Only .js files are allowed.");
+      filePath += ".js";
+    }
+    await fs.access(filePath);
+    const newServer = [filePath, url];
+    let exists = false;
+    if (this.servers) {
+      for (let server of this.servers) {
+        if (server[0] === filePath || server[1] === url) {
+          exists = true;
+          break;
+        }
+      }
+    }
+    if (!exists) {
+      this.servers.push(newServer);
     } else {
-      const server = [filePath, url];
-      let exists = false;
-      for (let server of this.#servers) {
-        if (server[0] === filePath) {
-          exists = true;
-          break;
-        }
-        if (server[1] === url) {
-          exists = true;
-          break;
-        }
-      }
-      if (!exists) {
-        this.#servers.push(server);
-      } else {
-        throw new Error(
-          "Server with the same file path or URL already exists on this hub."
-        );
-      }
+      throw new Error(
+        "Server with the same file path or URL already exists on this hub."
+      );
     }
     return this;
   }
+
   async removeServer(filePath) {
     await fs.access(filePath);
-    this.#servers = this.servers.filter((server) => server[0] !== filePath);
+    this.servers = this.servers.filter((server) => server[0] !== filePath);
     return this;
   }
+
   async logDiagnostics() {
     console.log(ansi.format("[SERVER DIAGNOSTIC LOG]", ["bold", "cyan"]));
-    for (let server of this.#servers) {
+    for (let server of this.servers) {
       await this.#logSingleServerDiagnostic(server);
       console.log(ansi.format("-".repeat(50), ["bold", "cyan"]));
     }
     return this;
   }
-  getServers() {
-    return this.#servers;
-  }
+
   #initialize() {
-    for (let server of this.#servers) {
-      child_process.exec(`node ${server[0]}`);
-    }
     if (this.useRestarter) {
-      setInterval(this.#checkServerCrash(), this.restartInterval);
+      setInterval(this.#checkServerCrash.bind(this), this.restartInterval);
     }
   }
+
   async #checkServerCrash() {
-    for (let server of this.#servers) {
-      fetch(`${server[1]}/testpath`).catch(() => {
-        console.warn(`Server at ${server[1]} has crashed. Restarting...`);
-        child_process
-          .exec(`node ${server[0]}`)
-          .then(() =>
-            console.log(`Server at ${server[1]} has been restarted.`)
+    if (this.servers) {
+      for (let server of this.servers) {
+        await fetch(`${server[1]}/testpath`).catch(() => {
+          console.log(
+            ansi.format(`Server at ${server[1]} has crashed. Restarting...`, [
+              "yellow",
+            ])
           );
-      });
+          child_process.exec(`node ${server[0]}`);
+          console.log(`Server at ${server[1]} has been restarted.`);
+        });
+      }
+    } else {
+      console.error(ansi.format("No servers to check for crash.", ["red"]));
     }
   }
+
   async #logSingleServerDiagnostic(server) {
     console.log(ansi.format(server[1], ["italic"]));
     const start = performance.now();
     try {
-      await fetch(`${server[1]}/testpath`).catch(() => {
-        throw new Error("skip to catch block");
-      });
-      const end = performance.now();
-      const ping = end - start;
-      process.stdout.write("Status: ");
-      console.log(ansi.format("Online", ["green", "bold"]));
-      process.stdout.write("Ping: ");
-      if (ping < 100) {
-        console.log(ansi.format(`${ping} ms`, ["green", "bold"]));
-      } else if (ping < 200) {
-        console.log(ansi.format(`${ping} ms`, ["yellow", "bold"]));
-      } else {
-        console.log(ansi.format(`${ping} ms`, ["red", "bold"]));
-      }
+      await fetch(`${server[1]}/testpath`)
+        .catch(() => {
+          throw new Error("skip to catch block");
+        })
+        .then(() => {
+          const end = performance.now();
+          const ping = end - start;
+          process.stdout.write("Status:");
+          console.log(ansi.format("Online", ["green", "bold"]));
+          process.stdout.write("Ping:");
+          if (ping < 100) {
+            console.log(ansi.format(`${ping} ms`, ["green", "bold"]));
+          } else if (ping < 200) {
+            console.log(ansi.format(`${ping} ms`, ["yellow", "bold"]));
+          } else {
+            console.log(ansi.format(`${ping} ms`, ["red", "bold"]));
+          }
+        });
     } catch {
-      process.stdout.write("Status: ");
+      process.stdout.write("Status:");
       console.log(ansi.format("Offline", ["red", "bold"]));
-      process.stdout.write("Ping: ");
+      process.stdout.write("Ping:");
       console.log(ansi.format("N/A", ["magenta", "bold"]));
     }
   }
-  #servers = [];
 }
 
 export default ServerHub;
