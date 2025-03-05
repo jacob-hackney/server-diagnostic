@@ -36,7 +36,16 @@ This method will save a server to the hub you created. It has two parameters:
 
 ```js
 const myHub = new ServerHub();
-myHub.addServer("server.js", "http://localhost:3000");
+myHub.addServer("server.js", "http://localhost:3000").then(() => {
+  //rest of code
+});
+```
+
+```js
+const myHub = new ServerHub();
+myHub
+  .addServer("server.js", "http://localhost:3000")
+  .otherServerHubMethod(/*params*/);
 ```
 
 **The server added must have a /testpath route or respond to any request. The ServerHub class will not test if it meets the requirements.**
