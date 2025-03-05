@@ -39,6 +39,8 @@ const myHub = new ServerHub();
 myHub.addServer("server.js", "http://localhost:3000");
 ```
 
+**The server added must have a /testpath route or respond to any request. The ServerHub class will not test if it meets the requirements.**
+
 ### Remove server method
 
 This is just the opposite of the addServer method. There is not a URL parameter, just a filePath parameter for this method. \
