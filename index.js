@@ -55,6 +55,9 @@ class ServerHub {
     }
     return this;
   }
+  getServers() {
+    return this.servers;
+  }
 
   #initialize() {
     if (this.useRestarter) {
