@@ -1,6 +1,6 @@
 # server-diagnostic
 
-[https://www.npmjs.com/package/server-diagnostic](https://www.npmjs.com/package/server-diagnostic)
+[https://www.npmjs.com/package/server-diagnostic](https://www.npmjs.com/package/server-diagnostic) \
 [https://github.com/jacob-hackney/server-diagnostic](https://github.com/jacob-hackney/server-diagnostic)
 
 ## Installation
