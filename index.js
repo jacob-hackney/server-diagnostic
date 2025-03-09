@@ -17,17 +17,21 @@ class ServerHub extends EventEmitter {
   }
 
   async addServer(filePath, url) {
-    if (path.extname(filePath) !== ".js") {
-      filePath += ".js";
+    if (filePath) {
+      if (path.extname(filePath) !== ".js") {
+        filePath += ".js";
+      }
+      await fs.access(filePath);
     }
-    await fs.access(filePath);
     const newServer = [filePath, url];
     let exists = false;
     if (this.servers) {
       for (let server of this.servers) {
         if (server[0] === filePath || server[1] === url) {
-          exists = true;
-          break;
+          if (server[0] !== null) {
+            exists = true;
+            break;
+          }
         }
       }
     }
@@ -52,12 +56,13 @@ class ServerHub extends EventEmitter {
     app.use("/", express.static(publicPath));
 
     app.get("/", (req, res) => {
-      res.writeHead(200, { "Content-Type": "text/html" });
       res.send(
         `<a href="http://localhost:${port}/diagnostics.html">Go to diagnostics</a>`
       );
+      this.emit("request", req.url);
     });
     app.get("/servers", (req, res) => {
+      this.emit("request", req.url);
       res.json(this.servers);
     });
 
@@ -77,12 +82,14 @@ class ServerHub extends EventEmitter {
   async #checkServerCrash() {
     if (this.servers) {
       for (let server of this.servers) {
-        await fetch(`${server[1]}/testpath`).catch(() => {
-          let url = server[1];
-          this.emit("crash", url);
-          child_process.exec(`node ${server[0]}`);
-          this.emit("restart", url);
-        });
+        if (server[0]) {
+          await fetch(`${server[1]}/testpath`).catch(() => {
+            let url = server[1];
+            this.emit("crash", url);
+            child_process.exec(`node ${server[0]}`);
+            this.emit("restart", url);
+          });
+        }
       }
     } else {
       this.emit("error", "No servers to check for crash.");
