@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Server Diagnostics</title>
+    <script src="diagnostics.js"></script>
+    <style>
+      th,
+      td {
+        padding: 5px;
+        min-width: 150px;
+        border: 1px solid black;
+      }
+      tr {
+        border-top: 2px solid black;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      table {
+        border: 2px solid black;
+        border-collapse: collapse;
+      }
+      .address {
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Server Diagnostics</h1>
+    <p id="connected-to-hub" style="color: red"></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Address</th>
+          <th>Status</th>
+          <th>Ping</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </body>
+</html>

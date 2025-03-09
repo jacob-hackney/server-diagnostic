@@ -1,42 +1,44 @@
-import ansi from "ansi-escape-sequences";
+import express from "express";
+import open from "open";
+
 import child_process from "child_process";
 import { promises as fs } from "fs";
-import path from "path";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+import EventEmitter from "events";
 
-class ServerHub {
+class ServerHub extends EventEmitter {
   constructor(useRestarter = false, restartInterval) {
+    super();
     this.useRestarter = useRestarter;
     this.restartInterval = restartInterval ? restartInterval : 10000;
-    if (!useRestarter && restartInterval) {
-      throw new Error(
-        "Cannot set restart interval without enabling restarter."
-      );
-    }
     this.servers = [];
     this.#initialize();
   }
 
   async addServer(filePath, url) {
-    if (path.extname(filePath) !== ".js") {
-      filePath += ".js";
+    if (filePath) {
+      if (path.extname(filePath) !== ".js") {
+        filePath += ".js";
+      }
+      await fs.access(filePath);
     }
-    await fs.access(filePath);
     const newServer = [filePath, url];
     let exists = false;
     if (this.servers) {
       for (let server of this.servers) {
         if (server[0] === filePath || server[1] === url) {
-          exists = true;
-          break;
+          if (server[0] !== null) {
+            exists = true;
+            break;
+          }
         }
       }
     }
     if (!exists) {
       this.servers.push(newServer);
     } else {
-      throw new Error(
-        "Server with the same file path or URL already exists on this hub."
-      );
+      this.emit("error", "Server already exists.");
     }
     return this;
   }
@@ -47,14 +49,26 @@ class ServerHub {
     return this;
   }
 
-  async logDiagnostics() {
-    console.log(ansi.format("[SERVER DIAGNOSTIC LOG]", ["bold", "cyan"]));
-    for (let server of this.servers) {
-      await this.#logSingleServerDiagnostic(server);
-      console.log(ansi.format("-".repeat(50), ["bold", "cyan"]));
-    }
-    return this;
+  openDiagnosticWindow(port) {
+    const app = express();
+    const publicPath = resolve(this.#__dirname, "diagnostics");
+
+    app.use("/", express.static(publicPath));
+
+    app.get("/", (req, res) => {
+      res.send(
+        `<a href="http://localhost:${port}/diagnostics.html">Go to diagnostics</a>`
+      );
+      this.emit("request", req.url);
+    });
+    app.get("/servers", (req, res) => {
+      this.emit("request", req.url);
+      res.json(this.servers);
+    });
+
+    app.listen(port, () => open(`http://localhost:${port}/diagnostics.html`));
   }
+
   getServers() {
     return this.servers;
   }
@@ -68,50 +82,21 @@ class ServerHub {
   async #checkServerCrash() {
     if (this.servers) {
       for (let server of this.servers) {
-        await fetch(`${server[1]}/testpath`).catch(() => {
-          console.log(
-            ansi.format(`Server at ${server[1]} has crashed. Restarting...`, [
-              "yellow",
-            ])
-          );
-          child_process.exec(`node ${server[0]}`);
-          console.log(`Server at ${server[1]} has been restarted.`);
-        });
+        if (server[0]) {
+          await fetch(`${server[1]}/testpath`).catch(() => {
+            let url = server[1];
+            this.emit("crash", url);
+            child_process.exec(`node ${server[0]}`);
+            this.emit("restart", url);
+          });
+        }
       }
     } else {
-      console.error(ansi.format("No servers to check for crash.", ["red"]));
+      this.emit("error", "No servers to check for crash.");
     }
   }
 
-  async #logSingleServerDiagnostic(server) {
-    console.log(ansi.format(server[1], ["italic"]));
-    const start = performance.now();
-    try {
-      await fetch(`${server[1]}/testpath`)
-        .catch(() => {
-          throw new Error("skip to catch block");
-        })
-        .then(() => {
-          const end = performance.now();
-          const ping = end - start;
-          process.stdout.write("Status:");
-          console.log(ansi.format("Online", ["green", "bold"]));
-          process.stdout.write("Ping:");
-          if (ping < 100) {
-            console.log(ansi.format(`${ping} ms`, ["green", "bold"]));
-          } else if (ping < 200) {
-            console.log(ansi.format(`${ping} ms`, ["yellow", "bold"]));
-          } else {
-            console.log(ansi.format(`${ping} ms`, ["red", "bold"]));
-          }
-        });
-    } catch {
-      process.stdout.write("Status:");
-      console.log(ansi.format("Offline", ["red", "bold"]));
-      process.stdout.write("Ping:");
-      console.log(ansi.format("N/A", ["magenta", "bold"]));
-    }
-  }
+  #__dirname = dirname(fileURLToPath(import.meta.url));
 }
 
 export default ServerHub;

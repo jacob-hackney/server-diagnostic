@@ -25,13 +25,13 @@ There are two optional parameters for the ServerHub constructor:
 
 - useRestarter (boolean, default false)
 - restartInterval (integer, default 10000)
-  If useRestarter is set to false, you cannot specifya value for restartInterval. When useRestarter is enabled, the servers added to the hub will automatically restart if they crash every \[restartInterval\] milliseconds.
+  If useRestarter is set to false, you cannot specify a value for restartInterval. When useRestarter is enabled, the servers added to the hub will automatically restart if they crash every \[restartInterval\] milliseconds.
 
 ### Add server method
 
 This method will save a server to the hub you created. It has two parameters:
 
-- filePath (string)
+- filePath (string/null)
 - url (string)
   Example:
 
@@ -49,7 +49,7 @@ myHub
   .otherServerHubMethod(/*params*/);
 ```
 
-**The server added must have a /testpath route or respond to any request. The ServerHub class will not test if it meets the requirements.**
+**The server added must have a /testpath route or respond to any request. The ServerHub class will not test if the given server meets the requirements.**
 
 ### Remove server method
 
@@ -61,9 +61,9 @@ myHub.addServer("server.js", "http://localhost:3000");
 myHub.removeServer("server.js");
 ```
 
-### Log diagnostics method
+### Open diagnostic window method
 
-This method will do a special log for the diagnostics of the server. It will log for each server:
+This method will open a new tab in your default browser and updates the following diagnostics in real-time:
 
 - The URL(italicized)
 - Status(Online/Offline)
@@ -71,7 +71,7 @@ This method will do a special log for the diagnostics of the server. It will log
   This method is simple enough, with no parameters:
 
 ```js
-myHub.logDiagnostics();
+myHub.openDiagnosticWindow();
 ```
 
 ### Get servers method
@@ -89,7 +89,8 @@ console.log(myHub.getServers);
 
 ## Dependencies
 
-- ansi-escape-sequences @6.2.4
+- express @4.21.2
+- open @10.1.0
 
 ## Credits
 
