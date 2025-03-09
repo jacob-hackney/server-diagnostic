@@ -4,7 +4,7 @@ import open from "open";
 import child_process from "child_process";
 import { promises as fs } from "fs";
 import { fileURLToPath } from "url";
-import { dirname } from "path";
+import { dirname, resolve } from "path";
 import EventEmitter from "events";
 
 class ServerHub extends EventEmitter {
@@ -47,8 +47,21 @@ class ServerHub extends EventEmitter {
 
   openDiagnosticWindow(port) {
     const app = express();
-    app.use("/", express.static(this.#__dirname + "/diagnostics"));
-    app.listen(port, () => open(`http://localhost:${port}`));
+    const publicPath = resolve(this.#__dirname, "public");
+
+    app.use("/", express.static(publicPath));
+
+    app.get("/", (req, res) => {
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.send(
+        `<a href="http://localhost:${port}/diagnostics.html">Go to diagnostics</a>`
+      );
+    });
+    app.get("/servers", (req, res) => {
+      res.json(this.servers);
+    });
+
+    app.listen(port, () => open(`http://localhost:${port}/diagnostics.html`));
   }
 
   getServers() {
