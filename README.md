@@ -6,7 +6,7 @@
 ## Installation
 
 ```sh
-npm install server-diagnostic --save
+npm install server-diagnostic --save-dev
 ```
 
 ## Usage
