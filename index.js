@@ -2,16 +2,13 @@ import ansi from "ansi-escape-sequences";
 import child_process from "child_process";
 import { promises as fs } from "fs";
 import path from "path";
+import EventEmitter from "events";
 
-class ServerHub {
+class ServerHub extends EventEmitter {
   constructor(useRestarter = false, restartInterval) {
+    super();
     this.useRestarter = useRestarter;
     this.restartInterval = restartInterval ? restartInterval : 10000;
-    if (!useRestarter && restartInterval) {
-      throw new Error(
-        "Cannot set restart interval without enabling restarter."
-      );
-    }
     this.servers = [];
     this.#initialize();
   }
@@ -34,9 +31,7 @@ class ServerHub {
     if (!exists) {
       this.servers.push(newServer);
     } else {
-      throw new Error(
-        "Server with the same file path or URL already exists on this hub."
-      );
+      this.emit("error", "Server already exists.");
     }
     return this;
   }
@@ -69,17 +64,14 @@ class ServerHub {
     if (this.servers) {
       for (let server of this.servers) {
         await fetch(`${server[1]}/testpath`).catch(() => {
-          console.log(
-            ansi.format(`Server at ${server[1]} has crashed. Restarting...`, [
-              "yellow",
-            ])
-          );
+          let url = server[1];
+          this.emit("crash", url);
           child_process.exec(`node ${server[0]}`);
-          console.log(`Server at ${server[1]} has been restarted.`);
+          this.emit("restart", url);
         });
       }
     } else {
-      console.error(ansi.format("No servers to check for crash.", ["red"]));
+      this.emit("error", "No servers to check for crash.");
     }
   }
 
