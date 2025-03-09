@@ -47,7 +47,7 @@ class ServerHub extends EventEmitter {
 
   openDiagnosticWindow(port) {
     const app = express();
-    const publicPath = resolve(this.#__dirname, "public");
+    const publicPath = resolve(this.#__dirname, "diagnostics");
 
     app.use("/", express.static(publicPath));
 
