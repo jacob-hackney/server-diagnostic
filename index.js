@@ -1,7 +1,10 @@
-import ansi from "ansi-escape-sequences";
+import express from "express";
+import open from "open";
+
 import child_process from "child_process";
 import { promises as fs } from "fs";
-import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 import EventEmitter from "events";
 
 class ServerHub extends EventEmitter {
@@ -42,14 +45,12 @@ class ServerHub extends EventEmitter {
     return this;
   }
 
-  async logDiagnostics() {
-    console.log(ansi.format("[SERVER DIAGNOSTIC LOG]", ["bold", "cyan"]));
-    for (let server of this.servers) {
-      await this.#logSingleServerDiagnostic(server);
-      console.log(ansi.format("-".repeat(50), ["bold", "cyan"]));
-    }
-    return this;
+  openDiagnosticWindow(port) {
+    const app = express();
+    app.use("/", express.static(this.#__dirname + "/diagnostics"));
+    app.listen(port, () => open(`http://localhost:${port}`));
   }
+
   getServers() {
     return this.servers;
   }
@@ -75,35 +76,7 @@ class ServerHub extends EventEmitter {
     }
   }
 
-  async #logSingleServerDiagnostic(server) {
-    console.log(ansi.format(server[1], ["italic"]));
-    const start = performance.now();
-    try {
-      await fetch(`${server[1]}/testpath`)
-        .catch(() => {
-          throw new Error("skip to catch block");
-        })
-        .then(() => {
-          const end = performance.now();
-          const ping = end - start;
-          process.stdout.write("Status:");
-          console.log(ansi.format("Online", ["green", "bold"]));
-          process.stdout.write("Ping:");
-          if (ping < 100) {
-            console.log(ansi.format(`${ping} ms`, ["green", "bold"]));
-          } else if (ping < 200) {
-            console.log(ansi.format(`${ping} ms`, ["yellow", "bold"]));
-          } else {
-            console.log(ansi.format(`${ping} ms`, ["red", "bold"]));
-          }
-        });
-    } catch {
-      process.stdout.write("Status:");
-      console.log(ansi.format("Offline", ["red", "bold"]));
-      process.stdout.write("Ping:");
-      console.log(ansi.format("N/A", ["magenta", "bold"]));
-    }
-  }
+  #__dirname = dirname(fileURLToPath(import.meta.url));
 }
 
 export default ServerHub;
